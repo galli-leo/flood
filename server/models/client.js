@@ -18,6 +18,7 @@ const TorrentCollection = require('./TorrentCollection');
 const torrentFilePropsMap = require('../../shared/constants/torrentFilePropsMap');
 const torrentGeneralPropsMap = require('../../shared/constants/torrentGeneralPropsMap');
 const torrentPeerPropsMap = require('../../shared/constants/torrentPeerPropsMap');
+const TorrentService = require('../services/TorrentService');
 const torrentTrackerPropsMap = require('../../shared/constants/torrentTrackerPropsMap');
 
 let pollIntervalID = null;
@@ -54,7 +55,7 @@ var client = {
       // Set the callback for only the last request.
       if (index === files.length - 1) {
         fileRequest.onComplete((response, error) => {
-          client.updateTorrentList();
+          TorrentService.fetchTorrentList();
           callback(response, error);
         });
       }
@@ -81,7 +82,7 @@ var client = {
 
     request.checkHash({hashes});
     request.onComplete((response, error) => {
-      client.updateTorrentList();
+      TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();
@@ -116,7 +117,7 @@ var client = {
         });
       }
 
-      client.updateTorrentList();
+      TorrentService.fetchTorrentList();
 
       callback(response, error);
     });
@@ -359,7 +360,7 @@ var client = {
 
     request.setFilePriority({hashes, fileIndices, priority: data.priority});
     request.onComplete((response, error) => {
-      client.updateTorrentList();
+      TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();
@@ -370,7 +371,7 @@ var client = {
 
     request.setPriority({hashes, priority: data.priority});
     request.onComplete((response, error) => {
-      client.updateTorrentList();
+      TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();
@@ -435,35 +436,41 @@ var client = {
     request.setTaxonomy(data);
     request.onComplete((response, error) => {
       // Fetch the latest torrent list to re-index the taxonomy.
-      client.updateTorrentList();
+      TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();
   },
 
   stopTorrent: (hashes, callback) => {
+    console.log('stopping torrent', hashes);
     let request = new ClientRequest();
 
     request.stopTorrents({hashes});
     request.onComplete((response, error) => {
-      client.updateTorrentList();
+      console.log('stop complete');
+      console.log(error);
+      TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();
   },
 
   startPollingTorrents: () => {
-    pollIntervalID = setInterval(() => {
-      client.updateTorrentList();
-    }, 1000 * 5);
+    // pollIntervalID = setInterval(() => {
+    //   TorrentService.fetchTorrentList();
+    // }, 1000 * 5);
   },
 
   startTorrent: (hashes, callback) => {
     let request = new ClientRequest();
 
+    console.log('starting');
     request.startTorrents({hashes});
     request.onComplete((response, error) => {
-      client.updateTorrentList();
+      console.log('start complete');
+      console.log(error);
+      TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();

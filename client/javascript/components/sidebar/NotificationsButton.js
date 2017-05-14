@@ -350,7 +350,7 @@ class NotificationsButton extends React.Component {
       <Tooltip
         contentClassName="tooltip__content tooltip__content--no-padding"
         content={this.getTooltipContent()}
-        interactive={true}
+        isInteractive={this.state.count.total !== 0}
         ref={ref => this.tooltipRef = ref}
         width={this.state.count.total === 0 ? null : 340}
         position="bottom"

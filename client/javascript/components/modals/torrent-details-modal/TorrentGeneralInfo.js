@@ -16,9 +16,9 @@ class TorrentGeneralInfo extends React.Component {
   render() {
     let torrent = this.props.torrent;
 
-    let added = null;
-    if (torrent.added) {
-      added = new Date(torrent.added * 1000);
+    let dateAdded = null;
+    if (torrent.dateAdded) {
+      dateAdded = new Date(torrent.dateAdded * 1000);
     }
 
     let creation = null;
@@ -45,20 +45,20 @@ class TorrentGeneralInfo extends React.Component {
                 />
               </td>
             </tr>
-            <tr className="torrent-details__detail torrent-details__detail--added">
+            <tr className="torrent-details__detail torrent-details__detail--dateAdded">
               <td className="torrent-details__detail__label">
                 <FormattedMessage
-                  id="torrents.details.general.added"
+                  id="torrents.details.general.date.added"
                   defaultMessage="Added"
                 />
               </td>
               <td className="torrent-details__detail__value">
-                {added
-                  ? this.props.intl.formatDate(added, {
+                {dateAdded
+                  ? this.props.intl.formatDate(dateAdded, {
                     year: 'numeric',
                     month: 'long',
                     day: '2-digit'}) + ' ' +
-                    this.props.intl.formatTime(added)
+                    this.props.intl.formatTime(dateAdded)
                   : VALUE_NOT_AVAILABLE}
               </td>
             </tr>
@@ -194,7 +194,7 @@ class TorrentGeneralInfo extends React.Component {
             <tr className="torrent-details__detail torrent-details__detail--created">
               <td className="torrent-details__detail__label">
                 <FormattedMessage
-                  id="torrents.details.general.creation.date"
+                  id="torrents.details.general.date.created"
                   defaultMessage="Creation Date"
                 />
               </td>

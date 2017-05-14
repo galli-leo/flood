@@ -4,10 +4,13 @@ import AppDispatcher from '../dispatcher/AppDispatcher';
 import ActionTypes from '../constants/ActionTypes';
 import AuthStore from '../stores/AuthStore';
 import ConfigStore from '../stores/ConfigStore';
+import serverEventTypes from '../../../shared/constants/serverEventTypes';
 
 const baseURI = ConfigStore.getBaseURI();
 
-let FloodActions = {
+let isEventSourceInitialized = false;
+
+const FloodActions = {
   clearNotifications: (options) => {
     return axios.delete(`${baseURI}api/notifications`)
       .then((json = {}) => {
@@ -149,7 +152,75 @@ let FloodActions = {
         error
       });
     });
-  }
+  },
+
+  startTorrentListStream: () => {
+    if (!isEventSourceInitialized) {
+      const source = new EventSource(`${baseURI}api/activity-stream`);
+
+      source.addEventListener(
+        serverEventTypes.TORRENT_LIST_DIFF_CHANGE,
+        (event) => {
+          AppDispatcher.dispatchServerAction({
+            type: ActionTypes.TORRENT_LIST_DIFF_CHANGE,
+            data: JSON.parse(event.data)
+          });
+        }
+      );
+
+      source.addEventListener(
+        serverEventTypes.TORRENT_LIST_FULL_UPDATE,
+        (event) => {
+          AppDispatcher.dispatchServerAction({
+            type: ActionTypes.TORRENT_LIST_FULL_UPDATE,
+            data: JSON.parse(event.data)
+          });
+        }
+      );
+
+      source.addEventListener(
+        serverEventTypes.TAXONOMY_DIFF_CHANGE,
+        (event) => {
+          AppDispatcher.dispatchServerAction({
+            type: ActionTypes.TAXONOMY_DIFF_CHANGE,
+            data: JSON.parse(event.data)
+          });
+        }
+      );
+
+      source.addEventListener(
+        serverEventTypes.TAXONOMY_FULL_UPDATE,
+        (event) => {
+          AppDispatcher.dispatchServerAction({
+            type: ActionTypes.TAXONOMY_FULL_UPDATE,
+            data: JSON.parse(event.data)
+          });
+        }
+      );
+
+      source.addEventListener(
+        serverEventTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
+        (event) => {
+          AppDispatcher.dispatchServerAction({
+            type: ActionTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
+            data: JSON.parse(event.data)
+          });
+        }
+      );
+
+      source.addEventListener(
+        serverEventTypes.TRANSFER_SUMMARY_FULL_UPDATE,
+        (event) => {
+          AppDispatcher.dispatchServerAction({
+            type: ActionTypes.TRANSFER_SUMMARY_FULL_UPDATE,
+            data: JSON.parse(event.data)
+          });
+        }
+      );
+
+      isEventSourceInitialized = true;
+    }
+  },
 };
 
 export default FloodActions;

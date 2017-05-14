@@ -1,19 +1,18 @@
 'use strict';
+const ajaxUtil = require('../util/ajaxUtil');
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const passport = require('passport');
 
-let ajaxUtil = require('../util/ajaxUtil');
-let express = require('express');
-let jwt = require('jsonwebtoken');
-let multer = require('multer');
-let passport = require('passport');
-
-let config = require('../../config');
-let router = express.Router();
-let Users = require('../models/Users');
+const config = require('../../config');
+const router = express.Router();
+const Users = require('../models/Users');
 
 const failedLoginResponse = 'Failed login.';
 
 router.post('/authenticate', (req, res) => {
-  let credentials = {
+  const credentials = {
     password: req.body.password,
     username: req.body.username
   };

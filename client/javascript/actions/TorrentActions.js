@@ -104,28 +104,6 @@ let TorrentActions = {
       });
   },
 
-  fetchTorrents: () => {
-    return axios.get(`${baseURI}api/client/torrents`)
-      .then((json = {}) => {
-        return json.data;
-      })
-      .then((torrents) => {
-        AppDispatcher.dispatchServerAction({
-          type: ActionTypes.CLIENT_FETCH_TORRENTS_SUCCESS,
-          data: {
-            torrents
-          }
-        });
-      }, (error) => {
-        AppDispatcher.dispatchServerAction({
-          type: ActionTypes.CLIENT_FETCH_TORRENTS_ERROR,
-          data: {
-            error
-          }
-        });
-      });
-  },
-
   fetchTorrentDetails: (hash) => {
     return axios.post(`${baseURI}api/client/torrent-details`, {
         hash

@@ -2,6 +2,8 @@
 
 require('events').EventEmitter.defaultMaxListeners = Infinity;
 
+const TorrentService = require('./services/TorrentService');
+
 let bodyParser = require('body-parser');
 let compression = require('compression');
 let cookieParser = require('cookie-parser');
