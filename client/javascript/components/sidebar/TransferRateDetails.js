@@ -38,13 +38,20 @@ class TransferRateDetails extends React.Component {
     let {
       props: {
         inspectorPoint,
-        throttles,
-        transferRate,
+        transferSummary,
         transferTotals
       }
     } = this;
 
+    const throttles = {
+      download: transferSummary.downThrottle,
+      upload: transferSummary.upThrottle
+    };
     let timestamp = null;
+    let transferRates = {
+      download: transferSummary.downRate,
+      upload: transferSummary.upRate
+    };
 
     const secondaryDataClasses = classnames(
       'client-stats__rate__data--secondary',
@@ -57,7 +64,7 @@ class TransferRateDetails extends React.Component {
     );
 
     if (inspectorPoint != null) {
-      transferRate = {
+      transferRates = {
         upload: inspectorPoint.uploadSpeed,
         download: inspectorPoint.downloadSpeed
       };
@@ -87,7 +94,7 @@ class TransferRateDetails extends React.Component {
         </div>
         <div className="client-stats__rate__data">
           <div className="client-stats__rate__data--primary">
-            <Size value={transferRate[slug]} isSpeed={true} />
+            <Size value={transferRates[slug]} isSpeed={true} />
           </div>
           {timestamp}
           <div className={secondaryDataClasses}>

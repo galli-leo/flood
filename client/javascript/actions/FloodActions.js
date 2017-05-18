@@ -112,28 +112,6 @@ const FloodActions = {
       });
   },
 
-  fetchTransferData: () => {
-    return axios.get(`${baseURI}api/stats`)
-      .then((json = {}) => {
-        return json.data;
-      })
-      .then((transferData) => {
-        AppDispatcher.dispatchServerAction({
-          type: ActionTypes.CLIENT_FETCH_TRANSFER_DATA_SUCCESS,
-          data: {
-            transferData
-          }
-        });
-      }, (error) => {
-        AppDispatcher.dispatchServerAction({
-          type: ActionTypes.CLIENT_FETCH_TRANSFER_DATA_ERROR,
-          data: {
-            error
-          }
-        });
-      });
-  },
-
   fetchTransferHistory: (opts) => {
     return axios.get(`${baseURI}api/history`, {
       params: opts

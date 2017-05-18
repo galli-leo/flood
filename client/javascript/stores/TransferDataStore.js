@@ -2,6 +2,7 @@ import ActionTypes from '../constants/ActionTypes';
 import AppDispatcher from '../dispatcher/AppDispatcher';
 import BaseStore from './BaseStore';
 import ConfigStore from './ConfigStore';
+import diffActionTypes from '../../../shared/constants/diffActionTypes';
 import EventTypes from '../constants/EventTypes';
 import FloodActions from '../actions/FloodActions';
 
@@ -14,8 +15,8 @@ class TransferDataStoreClass extends BaseStore {
 
     this.pollTransferDataID = null;
     this.transferRates = {download: [], upload: []};
+    this.transferSummary = {};
     this.transferTotals = {download: null, upload: null};
-    this.throttles = {download: null, upload: null};
   }
 
   fetchTransferData() {
@@ -26,34 +27,17 @@ class TransferDataStoreClass extends BaseStore {
       });
     }
 
-    if (!this.isRequestPending('fetch-transfer-data')) {
-      this.beginRequest('fetch-transfer-data');
-      FloodActions.fetchTransferData();
-    }
-
     if (this.pollTransferDataID === null) {
       this.startPollingTransferData();
     }
-  }
-
-  getThrottles(options = {}) {
-    if (options.latest) {
-      return {
-        download: this.throttles.download ?
-          this.throttles.download[this.throttles.download.length - 1] : null,
-        upload: this.throttles.upload ?
-          this.throttles.upload[this.throttles.upload.length - 1] : null
-      };
-    }
-    return this.throttles;
   }
 
   getTransferTotals() {
     return this.transferTotals;
   }
 
-  getTransferRate() {
-    return this.transferRate;
+  getTransferSummary() {
+    return this.transferSummary;
   }
 
   getTransferRates() {
@@ -69,65 +53,37 @@ class TransferDataStoreClass extends BaseStore {
     this.emit(EventTypes.CLIENT_SET_THROTTLE_ERROR);
   }
 
-  handleTransferDataSuccess(transferData) {
-    this.transferTotals = {
-      download: transferData.downloadTotal,
-      upload: transferData.uploadTotal
-    };
-
-    this.transferRate = {
-      download: transferData.downloadRate,
-      upload: transferData.uploadRate
-    };
-
-    // add the latest download & upload throttles to the end of the array and
-    // remove the first element in the array. if the arrays are empty, fill in
-    // zeros the last known throttle value.
-    let index = 0;
-    let downloadRateThrottleHistory = Object.assign([], this.throttles.download);
-    let uploadRateThrottleHistory = Object.assign([], this.throttles.upload);
-
-    if (downloadRateThrottleHistory.length === maxHistoryStates) {
-
-      downloadRateThrottleHistory.shift();
-      uploadRateThrottleHistory.shift();
-
-      downloadRateThrottleHistory.push(parseInt(transferData.downloadThrottle));
-      uploadRateThrottleHistory.push(parseInt(transferData.uploadThrottle));
-    } else {
-      while (index < maxHistoryStates) {
-        // we assume the throttle history has been the same for all previous
-        // history states.
-        uploadRateThrottleHistory[index] = parseInt(transferData.uploadThrottle);
-        downloadRateThrottleHistory[index] = parseInt(transferData.downloadThrottle);
-        index++;
-      }
-    }
-
-    this.throttles = {
-      download: downloadRateThrottleHistory,
-      upload: uploadRateThrottleHistory
-    };
-
-    this.emit(EventTypes.CLIENT_TRANSFER_DATA_REQUEST_SUCCESS);
-    this.resolveRequest('fetch-transfer-data');
-  }
-
-  handleTransferDataError() {
-    this.emit(EventTypes.CLIENT_TRANSFER_DATA_REQUEST_ERROR);
-    this.resolveRequest('fetch-transfer-data');
-  }
-
-  handleTransferHistoryError(error) {
+  handleFetchTransferHistoryError(error) {
     this.emit(EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_ERROR);
     this.resolveRequest('fetch-transfer-history');
   }
 
-  handleTransferHistorySuccess(transferData) {
+  handleFetchTransferHistorySuccess(transferData) {
     this.transferRates = transferData;
 
     this.emit(EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_SUCCESS);
     this.resolveRequest('fetch-transfer-history');
+  }
+
+  handleTransferSummaryDiffChange(diff) {
+    diff.forEach(change => {
+      if (change.action === diffActionTypes.ITEM_REMOVED) {
+        delete this.transferSummary[change.data];
+      } else {
+        this.transferSummary = {
+          ...this.transferSummary,
+          ...change.data
+        };
+      }
+    });
+
+    this.emit(EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE);
+  }
+
+  handleTransferSummaryFullUpdate(transferSummary) {
+    this.transferSummary = transferSummary;
+
+    this.emit(EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE);
   }
 
   startPollingTransferData() {
@@ -144,11 +100,11 @@ TransferDataStore.dispatcherID = AppDispatcher.register((payload) => {
   const {action, source} = payload;
 
   switch (action.type) {
-    case ActionTypes.CLIENT_FETCH_TRANSFER_DATA_SUCCESS:
-      TransferDataStore.handleTransferDataSuccess(action.data.transferData);
+    case ActionTypes.TRANSFER_SUMMARY_DIFF_CHANGE:
+      TransferDataStore.handleTransferSummaryDiffChange(action.data);
       break;
-    case ActionTypes.CLIENT_FETCH_TRANSFER_DATA_ERROR:
-      TransferDataStore.handleTransferDataError(action.data.error);
+    case ActionTypes.TRANSFER_SUMMARY_FULL_UPDATE:
+      TransferDataStore.handleTransferSummaryFullUpdate(action.data);
       break;
     case ActionTypes.CLIENT_SET_THROTTLE_SUCCESS:
       TransferDataStore.handleSetThrottleSuccess(action.data.transferData);
@@ -157,10 +113,10 @@ TransferDataStore.dispatcherID = AppDispatcher.register((payload) => {
       TransferDataStore.handleSetThrottleError(action.data.error);
       break;
     case ActionTypes.CLIENT_FETCH_TRANSFER_HISTORY_ERROR:
-      TransferDataStore.handleTransferHistoryError(action.error);
+      TransferDataStore.handleFetchTransferHistoryError(action.error);
       break;
     case ActionTypes.CLIENT_FETCH_TRANSFER_HISTORY_SUCCESS:
-      TransferDataStore.handleTransferHistorySuccess(action.data);
+      TransferDataStore.handleFetchTransferHistorySuccess(action.data);
       break;
   }
 });

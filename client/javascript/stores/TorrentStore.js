@@ -31,7 +31,8 @@ class TorrentStoreClass extends BaseStore {
     this.sortedTorrents = [];
     this.torrents = {};
 
-    this.startTorrentListStream();
+    // TODO: Move this somewhere more appropriate.
+    FloodActions.startTorrentListStream();
   }
 
   fetchMediainfo(hash) {
@@ -197,20 +198,6 @@ class TorrentStoreClass extends BaseStore {
     this.emit(EventTypes.UI_TORRENT_SELECTION_CHANGE);
   }
 
-  // handleFetchTorrentsError(error) {
-  //   this.resolveRequest('fetch-torrents');
-  // }
-
-  // handleFetchTorrentsSuccess(torrents) {
-  //   this.torrents = torrents;
-
-  //   this.sortTorrents();
-  //   this.filterTorrents();
-  //   this.resolveRequest('fetch-torrents');
-
-  //   this.emit(EventTypes.CLIENT_TORRENTS_REQUEST_SUCCESS);
-  // }
-
   handleRemoveTorrentsSuccess(response) {
     SettingsStore.saveFloodSettings({
       id: 'deleteTorrentData',
@@ -299,10 +286,6 @@ class TorrentStoreClass extends BaseStore {
     );
   }
 
-  startTorrentListStream() {
-    FloodActions.startTorrentListStream();
-  }
-
   stopPollingTorrentDetails() {
     clearInterval(this.pollTorrentDetailsIntervalID);
     this.pollTorrentDetailsIntervalID = null;
@@ -344,12 +327,6 @@ TorrentStore.dispatcherID = AppDispatcher.register((payload) => {
       break;
     case ActionTypes.TORRENT_LIST_FULL_UPDATE:
       TorrentStore.handleTorrentListFullUpdate(action.data);
-      break;
-    case ActionTypes.CLIENT_FETCH_TORRENTS_SUCCESS:
-      // TorrentStore.handleFetchTorrentsSuccess(action.data.torrents);
-      break;
-    case ActionTypes.CLIENT_FETCH_TORRENTS_ERROR:
-      // TorrentStore.handleFetchTorrentsError(action.error);
       break;
     case ActionTypes.CLIENT_MOVE_TORRENTS_SUCCESS:
       TorrentStore.handleMoveTorrentsSuccess(action.data);
