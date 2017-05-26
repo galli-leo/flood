@@ -38,8 +38,7 @@ class TransferRateDetails extends React.Component {
     let {
       props: {
         inspectorPoint,
-        transferSummary,
-        transferTotals
+        transferSummary
       }
     } = this;
 
@@ -51,6 +50,10 @@ class TransferRateDetails extends React.Component {
     let transferRates = {
       download: transferSummary.downRate,
       upload: transferSummary.upRate
+    };
+    let transferTotals = {
+      download: transferSummary.downTotal,
+      upload: transferSummary.upTotal
     };
 
     const secondaryDataClasses = classnames(

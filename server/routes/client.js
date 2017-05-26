@@ -4,7 +4,6 @@ const multer = require('multer');
 
 const ajaxUtil = require('../util/ajaxUtil');
 const client = require('../models/client');
-const history = require('../models/history');
 const router = express.Router();
 const settings = require('../models/settings');
 const TorrentService = require('../services/TorrentService');

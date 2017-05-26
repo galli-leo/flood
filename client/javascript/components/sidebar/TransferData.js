@@ -152,7 +152,6 @@ class TransferData extends React.Component {
     if (!this.isLoading()) {
       const historicalTransferRates = TransferDataStore.getTransferRates();
       const transferSummary = TransferDataStore.getTransferSummary();
-      const transferTotals = TransferDataStore.getTransferTotals();
 
       content = (
         <div className="client-stats"
@@ -161,8 +160,7 @@ class TransferData extends React.Component {
           onMouseOver={this.handleMouseOver}>
           <TransferRateDetails
             inspectorPoint={this.state.graphInspectorPoint}
-            transferSummary={transferSummary}
-            transferTotals={transferTotals} />
+            transferSummary={transferSummary}/>
           <TransferRateGraph
             height={150}
             historicalData={historicalTransferRates}

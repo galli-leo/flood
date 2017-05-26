@@ -21,7 +21,6 @@ const torrentPeerPropsMap = require('../../shared/constants/torrentPeerPropsMap'
 const TorrentService = require('../services/TorrentService');
 const torrentTrackerPropsMap = require('../../shared/constants/torrentTrackerPropsMap');
 
-let pollIntervalID = null;
 let statusCount = {};
 let tagCount = {};
 let torrentCollection = new TorrentCollection();
@@ -443,42 +442,25 @@ var client = {
   },
 
   stopTorrent: (hashes, callback) => {
-    console.log('stopping torrent', hashes);
     let request = new ClientRequest();
 
     request.stopTorrents({hashes});
     request.onComplete((response, error) => {
-      console.log('stop complete');
-      console.log(error);
       TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();
-  },
-
-  startPollingTorrents: () => {
-    // pollIntervalID = setInterval(() => {
-    //   TorrentService.fetchTorrentList();
-    // }, 1000 * 5);
   },
 
   startTorrent: (hashes, callback) => {
     let request = new ClientRequest();
 
-    console.log('starting');
     request.startTorrents({hashes});
     request.onComplete((response, error) => {
-      console.log('start complete');
-      console.log(error);
       TorrentService.fetchTorrentList();
       callback(response, error);
     });
     request.send();
-  },
-
-  stopPollingTorrents: () => {
-    clearInterval(pollIntervalID);
-    pollIntervalID = null;
   },
 
   updateTorrentList: (callback) => {

@@ -4,11 +4,13 @@ import AppDispatcher from '../dispatcher/AppDispatcher';
 import ActionTypes from '../constants/ActionTypes';
 import AuthStore from '../stores/AuthStore';
 import ConfigStore from '../stores/ConfigStore';
+import historySnapshotTypes from '../../../shared/constants/historySnapshotTypes';
 import serverEventTypes from '../../../shared/constants/serverEventTypes';
 
 const baseURI = ConfigStore.getBaseURI();
 
-let isEventSourceInitialized = false;
+let activityStreamEventSource = null;
+let lastHistorySnapshot = null;
 
 const FloodActions = {
   clearNotifications: (options) => {
@@ -132,73 +134,131 @@ const FloodActions = {
     });
   },
 
-  startTorrentListStream: () => {
-    if (!isEventSourceInitialized) {
-      const source = new EventSource(`${baseURI}api/activity-stream`);
+  handleTorrentListDiffChange(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.TORRENT_LIST_DIFF_CHANGE,
+      data: JSON.parse(event.data)
+    });
+  },
 
-      source.addEventListener(
-        serverEventTypes.TORRENT_LIST_DIFF_CHANGE,
-        (event) => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.TORRENT_LIST_DIFF_CHANGE,
-            data: JSON.parse(event.data)
-          });
-        }
-      );
+  handleTorrentListFullUpdate(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.TORRENT_LIST_FULL_UPDATE,
+      data: JSON.parse(event.data)
+    });
+  },
 
-      source.addEventListener(
-        serverEventTypes.TORRENT_LIST_FULL_UPDATE,
-        (event) => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.TORRENT_LIST_FULL_UPDATE,
-            data: JSON.parse(event.data)
-          });
-        }
-      );
+  handleTaxonomyDiffChange(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.TAXONOMY_DIFF_CHANGE,
+      data: JSON.parse(event.data)
+    });
+  },
 
-      source.addEventListener(
+  handleTaxonomyFullUpdate(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.TAXONOMY_FULL_UPDATE,
+      data: JSON.parse(event.data)
+    });
+  },
+
+  handleTransferSummaryDiffChange(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
+      data: JSON.parse(event.data)
+    });
+  },
+
+  handleTransferSummaryFullUpdate(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.TRANSFER_SUMMARY_FULL_UPDATE,
+      data: JSON.parse(event.data)
+    });
+  },
+
+  startTorrentListStream(options = {}) {
+    const {historySnapshot = historySnapshotTypes.FIVE_MINUTE} = options;
+    const didHistorySnapshotChange = lastHistorySnapshot !== historySnapshot;
+
+    lastHistorySnapshot = historySnapshot;
+
+    // When the user requests a new history snapshot during an open session,
+    // we need to close and re-open the event stream.
+    if (didHistorySnapshotChange && activityStreamEventSource !== null) {
+      activityStreamEventSource.close();
+
+      activityStreamEventSource.removeEventListener(
         serverEventTypes.TAXONOMY_DIFF_CHANGE,
-        (event) => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.TAXONOMY_DIFF_CHANGE,
-            data: JSON.parse(event.data)
-          });
-        }
+        this.handleTaxonomyDiffChange
       );
 
-      source.addEventListener(
+      activityStreamEventSource.removeEventListener(
         serverEventTypes.TAXONOMY_FULL_UPDATE,
-        (event) => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.TAXONOMY_FULL_UPDATE,
-            data: JSON.parse(event.data)
-          });
-        }
+        this.handleTaxonomyFullUpdate
       );
 
-      source.addEventListener(
+      activityStreamEventSource.removeEventListener(
+        serverEventTypes.TORRENT_LIST_DIFF_CHANGE,
+        this.handleTorrentListDiffChange
+      );
+
+      activityStreamEventSource.removeEventListener(
+        serverEventTypes.TORRENT_LIST_FULL_UPDATE,
+        this.handleTorrentListFullUpdate
+      );
+
+      activityStreamEventSource.removeEventListener(
         serverEventTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
-        (event) => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
-            data: JSON.parse(event.data)
-          });
-        }
+        this.handleTransferSummaryDiffChange
       );
 
-      source.addEventListener(
+      activityStreamEventSource.removeEventListener(
         serverEventTypes.TRANSFER_SUMMARY_FULL_UPDATE,
-        (event) => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.TRANSFER_SUMMARY_FULL_UPDATE,
-            data: JSON.parse(event.data)
-          });
-        }
+        this.handleTransferSummaryFullUpdate
+      );
+    }
+
+    // If the user requested a new history snapshot, or the event source has not
+    // alraedy been created, we open the event stream.
+    if (didHistorySnapshotChange || activityStreamEventSource == null) {
+      activityStreamEventSource = new EventSource(
+        `${baseURI}api/activity-stream?historySnapshot=${historySnapshot}`
       );
 
-      isEventSourceInitialized = true;
+      activityStreamEventSource.addEventListener(
+        serverEventTypes.TAXONOMY_DIFF_CHANGE,
+        this.handleTaxonomyDiffChange
+      );
+
+      activityStreamEventSource.addEventListener(
+        serverEventTypes.TAXONOMY_FULL_UPDATE,
+        this.handleTaxonomyFullUpdate
+      );
+
+      activityStreamEventSource.addEventListener(
+        serverEventTypes.TORRENT_LIST_DIFF_CHANGE,
+        this.handleTorrentListDiffChange
+      );
+
+      activityStreamEventSource.addEventListener(
+        serverEventTypes.TORRENT_LIST_FULL_UPDATE,
+        this.handleTorrentListFullUpdate
+      );
+
+      activityStreamEventSource.addEventListener(
+        serverEventTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
+        this.handleTransferSummaryDiffChange
+      );
+
+      activityStreamEventSource.addEventListener(
+        serverEventTypes.TRANSFER_SUMMARY_FULL_UPDATE,
+        this.handleTransferSummaryFullUpdate
+      );
     }
   },
 };
+
+// TODO: Remove this
+global.FloodActions = FloodActions;
 
 export default FloodActions;

@@ -17,7 +17,6 @@ let app = express();
 let apiRoutes = require('./routes/api');
 let authRoutes = require('./routes/auth');
 let mainRoutes = require('./routes/main');
-let PollService = require('./models/PollService');
 let Users = require('./models/Users');
 
 app.set('views', path.join(__dirname, 'views'));
@@ -38,9 +37,6 @@ require('./config/passport')(passport);
 app.use('/api', apiRoutes);
 app.use('/auth', authRoutes);
 app.use('/', mainRoutes);
-
-// Begin polling the client.
-PollService.init();
 
 // Catch 404 and forward to error handler.
 app.use((req, res, next) => {

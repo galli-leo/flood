@@ -8,6 +8,7 @@ const config = require('../../config');
 const formatUtil = require('../../shared/util/formatUtil');
 const HistoryEra = require('../models/HistoryEra');
 const historyServiceEvents = require('../constants/historyServiceEvents');
+const historySnapshotTypes = require('../../shared/constants/historySnapshotTypes');
 const objectUtil = require('../../shared/util/objectUtil');
 const transferSummaryPropMap = require('../constants/transferSummaryPropMap');
 
@@ -66,6 +67,7 @@ class HistoryService extends EventEmitter {
 
     this.errorCount = 0;
     this.pollTimeout = null;
+    this.transferRateHistory = {};
     this.transferSummary = {};
 
     this.yearSnapshot = new HistoryEra({
@@ -150,54 +152,52 @@ class HistoryService extends EventEmitter {
   getHistory(opts = {}, callback) {
     const historyCallback = processData.bind(this, opts, callback);
 
-    if (opts.snapshot === 'fiveMin') {
+    if (opts.snapshot === historySnapshotTypes.FIVE_MINUTE) {
       this.fiveMinSnapshot.getData(opts, historyCallback);
-    } else if (opts.snapshot === 'thirtyMin') {
+    } else if (opts.snapshot === historySnapshotTypes.THIRTY_MINUTE) {
       this.thirtyMinSnapshot.getData(opts, historyCallback);
-    } else if (opts.snapshot === 'hour') {
+    } else if (opts.snapshot === historySnapshotTypes.HOUR) {
       this.hourSnapshot.getData(opts, historyCallback);
-    } else if (opts.snapshot === 'day') {
+    } else if (opts.snapshot === historySnapshotTypes.DAY) {
       this.daySnapshot.getData(opts, historyCallback);
-    } else if (opts.snapshot === 'week') {
+    } else if (opts.snapshot === historySnapshotTypes.WEEK) {
       this.weekSnapshot.getData(opts, historyCallback);
-    } else if (opts.snapshot === 'month') {
+    } else if (opts.snapshot === historySnapshotTypes.MONTH) {
       this.monthSnapshot.getData(opts, historyCallback);
-    } else if (opts.snapshot === 'year') {
+    } else if (opts.snapshot === historySnapshotTypes.YEAR) {
       this.yearSnapshot.getData(opts, historyCallback);
     }
   }
 
   handleFetchTransferSummarySuccess(nextTransferSummary) {
-    const diff = objectUtil.getDiff(
+    const summaryDiff = objectUtil.getDiff(
       this.transferSummary,
       nextTransferSummary
     );
 
-    if (diff.length > 0) {
+    if (summaryDiff.length > 0) {
       this.emit(
         historyServiceEvents.TRANSFER_SUMMARY_DIFF_CHANGE,
         {
-          diff,
+          diff: summaryDiff,
           id: Date.now()
         }
       );
     }
 
+    this.errorCount = 0;
+    this.transferSummary = nextTransferSummary;
     this.fiveMinSnapshot.addData({
       upload: nextTransferSummary.upRate,
       download: nextTransferSummary.downRate
     });
 
-    this.transferSummary = nextTransferSummary;
-
     this.deferFetchTransferSummary();
 
-    this.errorCount = 0;
     this.emit(historyServiceEvents.FETCH_TRANSFER_SUMMARY_SUCCESS);
   }
 
   handleFetchTransferSummaryError(error) {
-    console.trace(error);
     let nextInterval = config.torrentClientPollInterval;
 
     // If more than consecutive errors have occurred, then we delay the next
@@ -215,26 +215,6 @@ class HistoryService extends EventEmitter {
 
     this.emit(historyServiceEvents.FETCH_TRANSFER_SUMMARY_ERROR);
   }
-
-  // startPolling() {
-  //   this.pollTimeout = setInterval(() => {
-  //     client.getTransferStats((data, err) => {
-  //       if (err) {
-  //         return;
-  //       }
-
-  //       fiveMinSnapshot.addData({
-  //         upload: data.uploadRate,
-  //         download: data.downloadRate
-  //       });
-  //     });
-  //   }, 1000 * 5);
-  // }
-
-  // stopPolling() {
-  //   clearInterval(this.pollTimeout);
-  //   this.pollTimeout = null;
-  // }
 }
 
 module.exports = new HistoryService();
