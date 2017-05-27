@@ -8,6 +8,7 @@ const torrentServiceEvents = [
   'FETCH_TRANSFER_SUMMARY_SUCCESS',
   'TRANSFER_SUMMARY_DIFF_CHANGE'
 ].concat(
+  // Create an array of event types based on the available snapshots.
   Object.keys(historySnapshotTypes).reduce(
     (accumulator, snapshotType) => {
       accumulator.push(
@@ -20,7 +21,5 @@ const torrentServiceEvents = [
     []
   )
 );
-
-console.log(torrentServiceEvents);
 
 module.exports = objectUtil.createSymbolMapFromArray(torrentServiceEvents);

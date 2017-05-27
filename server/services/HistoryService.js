@@ -5,6 +5,7 @@ const moment = require('moment');
 const client = require('../models/client');
 const ClientRequestService = require('./ClientRequestService');
 const config = require('../../config');
+const deepEqual = require('deep-equal');
 const formatUtil = require('../../shared/util/formatUtil');
 const HistoryEra = require('../models/HistoryEra');
 const historyServiceEvents = require('../constants/historyServiceEvents');
@@ -43,15 +44,9 @@ const processData = (opts, callback, data, error) => {
   data = data.slice(data.length - config.maxHistoryStates);
 
   callback(data.reduce((accumulator, snapshot, index) => {
-    const time = formatUtil.secondsToDuration(
-      moment.duration(currentTime.diff(moment(snapshot.ts))).asSeconds()
-    );
-
-    time.ts = snapshot.ts;
-
     accumulator.download.push(snapshot.dn);
     accumulator.upload.push(snapshot.up);
-    accumulator.timestamps.push(time);
+    accumulator.timestamps.push(snapshot.ts);
 
     return accumulator;
   }, {upload: [], download: [], timestamps: []}));
@@ -66,8 +61,8 @@ class HistoryService extends EventEmitter {
     this.handleFetchTransferSummarySuccess = this.handleFetchTransferSummarySuccess.bind(this);
 
     this.errorCount = 0;
+    this.lastSnapshots = {};
     this.pollTimeout = null;
-    this.transferRateHistory = {};
     this.transferSummary = {};
 
     this.yearSnapshot = new HistoryEra({
@@ -125,6 +120,34 @@ class HistoryService extends EventEmitter {
     });
 
     this.fetchCurrentTransferSummary();
+  }
+
+  checkSnapshotDiffs() {
+    Object.keys(historySnapshotTypes).forEach(snapshotType => {
+      this.getHistory(
+        {snapshot: historySnapshotTypes[snapshotType]},
+        (nextSnapshot, error) => {
+          const lastSnapshot = this.lastSnapshots[snapshotType] || {};
+          const {timestamps = []} = lastSnapshot;
+          const nextLastTimestamp = timestamps[timestamps.length - 1];
+          const prevLastTimestamp = nextSnapshot.timestamps[
+            nextSnapshot.timestamps.length - 1
+          ];
+
+          if (nextLastTimestamp !== prevLastTimestamp) {
+            this.emit(
+              historyServiceEvents[`${snapshotType}_SNAPSHOT_FULL_UPDATE`],
+              {
+                id: nextLastTimestamp,
+                data: nextSnapshot
+              }
+            );
+          }
+
+          this.lastSnapshots[snapshotType] = nextSnapshot;
+        }
+      );
+    });
   }
 
   deferFetchTransferSummary(interval = config.torrentClientPollInterval) {
@@ -192,6 +215,7 @@ class HistoryService extends EventEmitter {
       download: nextTransferSummary.downRate
     });
 
+    this.checkSnapshotDiffs();
     this.deferFetchTransferSummary();
 
     this.emit(historyServiceEvents.FETCH_TRANSFER_SUMMARY_SUCCESS);

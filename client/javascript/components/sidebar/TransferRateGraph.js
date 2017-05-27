@@ -1,9 +1,13 @@
 import d3 from 'd3';
 import React from 'react';
 
+import EventTypes from '../../constants/EventTypes';
+import TransferDataStore from '../../stores/TransferDataStore';
+
 const METHODS_TO_BIND = [
   'appendGraphCircles',
   'appendEmptyGraphShapes',
+  'handleTransferHistoryChange',
   'handleMouseOut',
   'handleMouseOver',
   'handleMouseMove',
@@ -48,11 +52,23 @@ class TransferRateGraph extends React.Component {
   }
 
   componentDidMount() {
+    TransferDataStore.listen(
+      EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_SUCCESS,
+      this.handleTransferHistoryChange
+    );
+
     this.updateGraph();
   }
 
   componentDidUpdate() {
     this.updateGraph();
+  }
+
+  componentWillUnmount() {
+    TransferDataStore.unlisten(
+      EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_SUCCESS,
+      this.handleTransferHistoryChange
+    );
   }
 
   appendGraphCircles(graph, slug) {
@@ -89,6 +105,10 @@ class TransferRateGraph extends React.Component {
     );
   }
 
+  handleTransferHistoryChange() {
+    this.renderGraphData();
+  }
+
   handleMouseMove(mouseX) {
     this.lastMouseX = mouseX;
     this.renderPrecisePointInspectors();
@@ -114,8 +134,8 @@ class TransferRateGraph extends React.Component {
     this.graphRefs.download.inspectPoint.style('opacity', 1);
   }
 
-  renderGraphData(props) {
-    const {height, historicalData, id, width} = props;
+  renderGraphData() {
+    const {height, historicalData, id, width} = this.props;
     const graph = d3.select(`#${id}`);
     const margin = {bottom: 10, top: 10};
 

@@ -39,13 +39,40 @@ module.exports = function (req, res, next) {
   serverEvent.addData(transferSummary.transferSummary);
   serverEvent.emit();
 
-  // Create diff listeners.
+  // TODO: Handle empty or sub-optimal history states.
+  // Get user's specified history snapshot current history.
+  HistoryService.getHistory({snapshot: historySnapshot}, (snapshot, error) => {
+    const {timestamps: lastTimestamps = []} = snapshot;
+    const lastTimestamp = lastTimestamps[lastTimestamps.length - 1];
+
+    if (error == null) {
+      serverEvent.setID(lastTimestamp);
+      serverEvent.setType(serverEventTypes.TRANSFER_HISTORY_FULL_UPDATE);
+      serverEvent.addData(snapshot);
+      serverEvent.emit();
+    }
+  });
+
+  // Add user's specified history snapshot change event listener.
+  HistoryService.on(
+    historyServiceEvents[
+      `${historySnapshotTypes[historySnapshot]}_SNAPSHOT_FULL_UPDATE`
+    ],
+    payload => {
+      const {data, id} = payload;
+
+      serverEvent.setID(id);
+      serverEvent.setType(serverEventTypes.TRANSFER_HISTORY_FULL_UPDATE);
+      serverEvent.addData(data);
+      serverEvent.emit();
+    }
+  );
+
+  // Add diff event listeners.
   HistoryService.on(
     historyServiceEvents.TRANSFER_SUMMARY_DIFF_CHANGE,
     (payload) => {
       const {diff, id} = payload;
-
-      debugger;
 
       serverEvent.setID(id);
       serverEvent.setType(serverEventTypes.TRANSFER_SUMMARY_DIFF_CHANGE);

@@ -2,7 +2,7 @@
 
 const objectUtil = require('../util/objectUtil');
 
-module.exports = {
+const historySnapshotTypes = {
   FIVE_MINUTE: 'fiveMin',
   THIRTY_MINUTE: 'thirtyMin',
   HOUR: 'hour',
@@ -10,3 +10,5 @@ module.exports = {
   MONTH: 'month',
   YEAR: 'year'
 };
+
+module.exports = objectUtil.reflect(historySnapshotTypes);

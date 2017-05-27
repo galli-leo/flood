@@ -114,26 +114,6 @@ const FloodActions = {
       });
   },
 
-  fetchTransferHistory: (opts) => {
-    return axios.get(`${baseURI}api/history`, {
-      params: opts
-    })
-    .then((json = {}) => {
-      return json.data;
-    })
-    .then((data) => {
-      AppDispatcher.dispatchServerAction({
-        type: ActionTypes.CLIENT_FETCH_TRANSFER_HISTORY_SUCCESS,
-        data
-      });
-    }, (error) => {
-      AppDispatcher.dispatchServerAction({
-        type: ActionTypes.CLIENT_FETCH_TRANSFER_HISTORY_ERROR,
-        error
-      });
-    });
-  },
-
   handleTorrentListDiffChange(event) {
     AppDispatcher.dispatchServerAction({
       type: ActionTypes.TORRENT_LIST_DIFF_CHANGE,
@@ -172,6 +152,13 @@ const FloodActions = {
   handleTransferSummaryFullUpdate(event) {
     AppDispatcher.dispatchServerAction({
       type: ActionTypes.TRANSFER_SUMMARY_FULL_UPDATE,
+      data: JSON.parse(event.data)
+    });
+  },
+
+  handleTransferHistoryFullUpdate(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.TRANSFER_HISTORY_FULL_UPDATE,
       data: JSON.parse(event.data)
     });
   },
@@ -216,6 +203,11 @@ const FloodActions = {
         serverEventTypes.TRANSFER_SUMMARY_FULL_UPDATE,
         this.handleTransferSummaryFullUpdate
       );
+
+      activityStreamEventSource.removeEventListener(
+        serverEventTypes.TRANSFER_HISTORY_FULL_UPDATE,
+        this.handleTransferHistoryFullUpdate
+      );
     }
 
     // If the user requested a new history snapshot, or the event source has not
@@ -253,6 +245,11 @@ const FloodActions = {
       activityStreamEventSource.addEventListener(
         serverEventTypes.TRANSFER_SUMMARY_FULL_UPDATE,
         this.handleTransferSummaryFullUpdate
+      );
+
+      activityStreamEventSource.addEventListener(
+        serverEventTypes.TRANSFER_HISTORY_FULL_UPDATE,
+        this.handleTransferHistoryFullUpdate
       );
     }
   },

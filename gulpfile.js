@@ -105,7 +105,7 @@ gulp.task('browsersync', () => {
   browserSync.init({
     online: true,
     open: false,
-    port: 5010,
+    port: 4200,
     proxy: proxyPath,
     serveStatic: ['.', './server/assets']
   });

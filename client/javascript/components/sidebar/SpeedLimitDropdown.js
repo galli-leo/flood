@@ -53,7 +53,6 @@ class SpeedLimitDropdown extends React.Component {
       EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE,
       this.onTransferSummaryChange
     );
-    TransferDataStore.fetchTransferData();
   }
 
   componentWillUnmount() {

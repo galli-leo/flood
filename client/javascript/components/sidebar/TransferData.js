@@ -75,7 +75,6 @@ class TransferData extends React.Component {
       EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_SUCCESS,
       this.onTransferHistoryRequestSuccess
     );
-    TransferDataStore.fetchTransferData();
   }
 
   componentWillUnmount() {

@@ -1,4 +1,3 @@
-const deepEqual = require('deep-equal');
 const EventEmitter = require('events');
 
 const config = require('../../config.js');

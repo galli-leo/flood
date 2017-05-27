@@ -13,27 +13,24 @@ class TransferDataStoreClass extends BaseStore {
   constructor() {
     super();
 
-    this.pollTransferDataID = null;
-    this.transferRates = {download: [], upload: []};
+    this.transferRates = {download: [], upload: [], timestamps: []};
     this.transferSummary = {};
-    this.transferTotals = {download: null, upload: null};
   }
 
-  fetchTransferData() {
-    if (!this.isRequestPending('fetch-transfer-history')) {
-      this.beginRequest('fetch-transfer-history');
-      FloodActions.fetchTransferHistory({
-        snapshot: 'fiveMin'
-      });
+  appendCurrentTransferRateToHistory() {
+    // TODO: Find a better way to append the current transfer rate. This
+    // just replaces the last transfer rate values from the history service with
+    // the most recent speed.
+    if (this.transferRates.download.length > 0) {
+      this.transferRates.download[this.transferRates.download.length - 1] = (
+        this.transferSummary.downRate
+      );
+      this.transferRates.upload[this.transferRates.upload.length - 1] = (
+        this.transferSummary.upRate
+      );
     }
 
-    if (this.pollTransferDataID === null) {
-      this.startPollingTransferData();
-    }
-  }
-
-  getTransferTotals() {
-    return this.transferTotals;
+    this.emit(EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_SUCCESS);
   }
 
   getTransferSummary() {
@@ -45,7 +42,6 @@ class TransferDataStoreClass extends BaseStore {
   }
 
   handleSetThrottleSuccess(data) {
-    this.fetchTransferData();
     this.emit(EventTypes.CLIENT_SET_THROTTLE_SUCCESS);
   }
 
@@ -55,14 +51,11 @@ class TransferDataStoreClass extends BaseStore {
 
   handleFetchTransferHistoryError(error) {
     this.emit(EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_ERROR);
-    this.resolveRequest('fetch-transfer-history');
   }
 
   handleFetchTransferHistorySuccess(transferData) {
     this.transferRates = transferData;
-
     this.emit(EventTypes.CLIENT_TRANSFER_HISTORY_REQUEST_SUCCESS);
-    this.resolveRequest('fetch-transfer-history');
   }
 
   handleTransferSummaryDiffChange(diff) {
@@ -77,20 +70,15 @@ class TransferDataStoreClass extends BaseStore {
       }
     });
 
+    this.appendCurrentTransferRateToHistory();
     this.emit(EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE);
   }
 
   handleTransferSummaryFullUpdate(transferSummary) {
     this.transferSummary = transferSummary;
 
+    this.appendCurrentTransferRateToHistory();
     this.emit(EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE);
-  }
-
-  startPollingTransferData() {
-    this.pollTransferDataID = setInterval(
-      this.fetchTransferData.bind(this),
-      pollInterval
-    );
   }
 }
 
@@ -112,10 +100,7 @@ TransferDataStore.dispatcherID = AppDispatcher.register((payload) => {
     case ActionTypes.CLIENT_SET_THROTTLE_ERROR:
       TransferDataStore.handleSetThrottleError(action.data.error);
       break;
-    case ActionTypes.CLIENT_FETCH_TRANSFER_HISTORY_ERROR:
-      TransferDataStore.handleFetchTransferHistoryError(action.error);
-      break;
-    case ActionTypes.CLIENT_FETCH_TRANSFER_HISTORY_SUCCESS:
+    case ActionTypes.TRANSFER_HISTORY_FULL_UPDATE:
       TransferDataStore.handleFetchTransferHistorySuccess(action.data);
       break;
   }

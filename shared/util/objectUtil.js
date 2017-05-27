@@ -25,20 +25,23 @@ const objectUtil = {
     let shouldCheckForRemovals = nextObjectKeys.length < prevObjectKeys.length;
 
     const diff = nextObjectKeys.reduce((accumulator, key) => {
-      if (prevObject[key] == null) {
+      const prevValue = prevObject[key];
+      const nextValue = nextObject[key];
+
+      if (prevValue == null) {
         shouldCheckForRemovals = true;
 
         accumulator.push({
           action: diffActionTypes.ITEM_ADDED,
           data: {
-            [key]: nextObject[key]
+            [key]: nextValue
           }
         });
-      } else if (prevObject[key] !== nextObject[key]) {
+      } else if (prevValue !== nextValue) {
         accumulator.push({
           action: diffActionTypes.ITEM_CHANGED,
           data: {
-            [key]: nextObject[key]
+            [key]: nextValue
           }
         });
       }
